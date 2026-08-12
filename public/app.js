@@ -138,6 +138,90 @@ window.SM = (function () {
         }
     }
 
+    // ============ COMPARTILHAMENTO (Web Share Target) ============
+    /**
+     * Dois cenários chegam aqui via query string:
+     * 1. Retorno do fluxo /share.html (POST share_target) → só mostra o
+     *    resultado (?shared=success|partial|error|empty&title=...).
+     * 2. Compartilhamento/abertura direta via GET (?url=...&text=...&title=...)
+     *    → dispara a captura automaticamente, sem precisar tocar em nada.
+     */
+    function cleanUrlParams(params) {
+        const query = params.toString();
+        const newUrl = window.location.pathname + (query ? `?${query}` : '') + window.location.hash;
+        window.history.replaceState({}, '', newUrl);
+    }
+
+    function handleShareReturn(params) {
+        const status = params.get('shared');
+        const title = params.get('title');
+        const messages = {
+            success: title ? `Capturado: ${title}` : 'Conteúdo compartilhado capturado!',
+            partial: 'Capturado parcialmente — alguns itens do compartilhamento falharam.',
+            error: 'Não foi possível capturar o conteúdo compartilhado.',
+            empty: 'Nenhum conteúdo compartilhado foi encontrado.',
+        };
+        const types = { success: 'success', partial: 'info', error: 'error', empty: 'info' };
+        showToast(messages[status] || 'Compartilhamento processado.', types[status] || 'info');
+
+        params.delete('shared');
+        params.delete('title');
+        cleanUrlParams(params);
+
+        if (window.SM.Capture && window.SM.Capture.loadRecent) window.SM.Capture.loadRecent();
+        if (window.SM.Library && window.SM.Library.refresh) window.SM.Library.refresh();
+    }
+
+    async function autoCaptureFromParams(params) {
+        const sharedUrl = (params.get('url') || '').trim();
+        const sharedText = (params.get('text') || '').trim();
+        const sharedTitle = (params.get('title') || '').trim();
+
+        params.delete('url');
+        params.delete('text');
+        params.delete('title');
+        cleanUrlParams(params);
+
+        showToast('Capturando conteúdo compartilhado...', 'info');
+        try {
+            const urlRegex = /https?:\/\/[^\s]+/i;
+            const isDirectUrl = /^https?:\/\/[^\s]+$/i.test(sharedUrl);
+            const extracted = isDirectUrl ? sharedUrl : (sharedUrl.match(urlRegex) || sharedText.match(urlRegex) || [])[0];
+
+            let data;
+            if (extracted) {
+                data = await apiFetch('/capture/link', {
+                    method: 'POST',
+                    body: JSON.stringify({ url: extracted }),
+                });
+            } else {
+                const combined = sharedTitle ? `${sharedTitle}\n\n${sharedText}`.trim() : sharedText;
+                if (!combined) return;
+                data = await apiFetch('/capture/text', {
+                    method: 'POST',
+                    body: JSON.stringify({ text: combined }),
+                });
+            }
+            showToast(`Capturado: ${data.title || 'conteúdo'}`, 'success');
+            if (window.SM.Capture && window.SM.Capture.loadRecent) window.SM.Capture.loadRecent();
+        } catch (e) {
+            showToast('Erro ao capturar conteúdo compartilhado: ' + e.message, 'error');
+        }
+    }
+
+    function handleIncomingShare() {
+        const params = new URLSearchParams(window.location.search);
+
+        if (params.has('shared')) {
+            handleShareReturn(params);
+            return;
+        }
+
+        if (params.has('url') || params.has('text')) {
+            autoCaptureFromParams(params);
+        }
+    }
+
     function init() {
         initNav();
         registerServiceWorker();
@@ -146,6 +230,8 @@ window.SM = (function () {
         if (window.SM.Search && window.SM.Search.init) window.SM.Search.init();
         if (window.SM.Library && window.SM.Library.init) window.SM.Library.init();
         if (window.SM.Detail && window.SM.Detail.init) window.SM.Detail.init();
+
+        handleIncomingShare();
     }
 
     document.addEventListener('DOMContentLoaded', init);

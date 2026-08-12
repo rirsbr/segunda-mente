@@ -600,3 +600,39 @@ button, input, textarea, select {
     }
     .app-header { margin-left: 88px; }
 }
+
+/* ===================================
+   TELA DE SHARE (public/share.html)
+   =================================== */
+.share-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+.share-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+    max-width: 320px;
+}
+.share-logo { font-size: 42px; }
+.share-status {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+.share-spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    animation: share-spin 0.8s linear infinite;
+}
+@keyframes share-spin {
+    to { transform: rotate(360deg); }
+}

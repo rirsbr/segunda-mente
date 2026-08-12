@@ -7,7 +7,6 @@ import os
 import uuid
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
-from fastapi.responses import JSONResponse
 
 from api._lib.config import settings
 from api._lib.models import CaptureLinkRequest, CaptureResponse, CaptureTextRequest
@@ -34,28 +33,59 @@ def _ext_to_content_type(filename: str) -> str:
         return "pdf"
     if ext in settings.DOC_EXTENSIONS:
         return "text"
-    return "pdf" if ext == ".pdf" else "text"
+    return "text"
+
+
+def _insert_content(supabase, data: dict) -> str:
+    """
+    Insere o registro inicial em `contents`. Qualquer falha aqui (Supabase
+    fora do ar, credenciais erradas, coluna/constraint inválida) vira um
+    HTTPException com mensagem legível — nunca um 500 opaco silencioso.
+    """
+    try:
+        insert = supabase.table("contents").insert(data).execute()
+    except Exception as exc:
+        logger.exception("Falha ao inserir conteúdo no Supabase: %s", exc)
+        raise HTTPException(status_code=502, detail=f"Falha ao salvar no banco de dados: {exc}")
+
+    if not insert.data:
+        raise HTTPException(status_code=502, detail="Falha ao criar registro: resposta vazia do Supabase")
+
+    return insert.data[0]["id"]
 
 
 async def _run_pipeline(content_id: str, file_bytes: bytes = None, filename: str = None) -> CaptureResponse:
-    supabase = get_supabase()
+    """
+    Roda o pipeline de IA (extração + classificação + embeddings) para o
+    conteúdo já salvo. `process_content` nunca propaga exceção — na pior
+    hipótese o conteúdo fica com status 'pending' e error_message
+    preenchido, mas a captura em si é sempre considerada bem-sucedida
+    (o dado do usuário já está salvo desde o INSERT).
+    """
     try:
         result = await process_content(content_id, file_bytes=file_bytes, filename=filename)
+        status = result.get("status", "pending")
+        message = (
+            "Capturado e processado com sucesso."
+            if status == "processed"
+            else "Capturado! O enriquecimento com IA ainda está pendente — você pode reprocessar depois."
+        )
         return CaptureResponse(
             id=content_id,
-            status=result.get("status", "processed"),
+            status=status,
             title=result.get("title"),
-            message="Capturado e processado com sucesso.",
+            message=message,
         )
     except Exception as exc:
-        logger.exception("Erro no pipeline de captura %s: %s", content_id, exc)
-        row = supabase.table("contents").select("title,status").eq("id", content_id).limit(1).execute()
-        title = row.data[0]["title"] if row.data else None
+        # Rede de segurança final: mesmo que algo totalmente inesperado
+        # aconteça aqui, o registro já existe no banco (status 'pending'),
+        # então ainda respondemos 200 em vez de derrubar a captura.
+        logger.exception("Falha inesperada no pipeline de captura %s: %s", content_id, exc)
         return CaptureResponse(
             id=content_id,
-            status="error",
-            title=title,
-            message="Capturado, mas houve erro no processamento. Você pode reprocessar depois.",
+            status="pending",
+            title=None,
+            message="Capturado! Houve um problema ao processar com IA — você pode reprocessar depois.",
         )
 
 
@@ -66,16 +96,12 @@ async def capture_text(payload: CaptureTextRequest):
         raise HTTPException(status_code=400, detail="Texto vazio")
 
     supabase = get_supabase()
-    insert = supabase.table("contents").insert({
+    content_id = _insert_content(supabase, {
         "content_type": "text",
         "original_text": text,
         "status": "pending",
-    }).execute()
+    })
 
-    if not insert.data:
-        raise HTTPException(status_code=500, detail="Falha ao criar registro")
-
-    content_id = insert.data[0]["id"]
     return await _run_pipeline(content_id)
 
 
@@ -89,18 +115,14 @@ async def capture_link(payload: CaptureLinkRequest):
     content_type = "video" if platform in VIDEO_PLATFORMS else "link"
 
     supabase = get_supabase()
-    insert = supabase.table("contents").insert({
+    content_id = _insert_content(supabase, {
         "content_type": content_type,
         "source_url": url,
         "source_platform": platform,
         "original_text": payload.note or None,
         "status": "pending",
-    }).execute()
+    })
 
-    if not insert.data:
-        raise HTTPException(status_code=500, detail="Falha ao criar registro")
-
-    content_id = insert.data[0]["id"]
     return await _run_pipeline(content_id)
 
 
@@ -126,7 +148,7 @@ async def capture_file(file: UploadFile = File(...), note: str = Form(None)):
         )
     except Exception as exc:
         logger.exception("Falha no upload para Storage: %s", exc)
-        raise HTTPException(status_code=500, detail="Falha ao enviar arquivo para o armazenamento")
+        raise HTTPException(status_code=502, detail=f"Falha ao enviar arquivo para o armazenamento: {exc}")
 
     insert_data = {
         "content_type": content_type,
@@ -144,11 +166,8 @@ async def capture_file(file: UploadFile = File(...), note: str = Form(None)):
         except Exception:
             pass
 
-    insert = supabase.table("contents").insert(insert_data).execute()
-    if not insert.data:
-        raise HTTPException(status_code=500, detail="Falha ao criar registro")
+    content_id = _insert_content(supabase, insert_data)
 
-    content_id = insert.data[0]["id"]
     return await _run_pipeline(content_id, file_bytes=file_bytes, filename=file.filename)
 
 
@@ -170,18 +189,14 @@ async def capture_audio(audio: UploadFile = File(...)):
         )
     except Exception as exc:
         logger.exception("Falha no upload de áudio: %s", exc)
-        raise HTTPException(status_code=500, detail="Falha ao enviar áudio para o armazenamento")
+        raise HTTPException(status_code=502, detail=f"Falha ao enviar áudio para o armazenamento: {exc}")
 
-    insert = supabase.table("contents").insert({
+    content_id = _insert_content(supabase, {
         "content_type": "audio",
         "file_path": storage_path,
         "file_size": len(file_bytes),
         "mime_type": mime_type,
         "status": "pending",
-    }).execute()
+    })
 
-    if not insert.data:
-        raise HTTPException(status_code=500, detail="Falha ao criar registro")
-
-    content_id = insert.data[0]["id"]
     return await _run_pipeline(content_id, file_bytes=file_bytes, filename=filename)
