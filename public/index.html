@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6c5ce7">
+<meta name="description" content="Segunda Mente — seu segundo cérebro pessoal com IA">
+<title>Segunda Mente</title>
+
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="app-header">
+    <span class="app-header-logo">🧠</span>
+    <span class="app-header-title">Segunda Mente</span>
+  </header>
+
+  <!-- ===================== TELA: CAPTURA ===================== -->
+  <main id="screen-capture" class="screen main-content" data-screen="capture">
+    <div id="capture-dropzone" class="capture-box">
+      <textarea id="capture-textarea" class="capture-textarea"
+        placeholder="Cole um link, escreva uma nota, ou arraste um arquivo..."></textarea>
+    </div>
+
+    <input type="file" id="input-file" hidden>
+    <input type="file" id="input-photo" accept="image/*" capture="environment" hidden>
+
+    <div class="capture-actions-grid">
+      <button class="capture-action-btn" id="btn-attach" type="button">
+        <span class="capture-action-icon">📎</span><span>Arq.</span>
+      </button>
+      <button class="capture-action-btn" id="btn-audio" type="button">
+        <span class="capture-action-icon">🎙</span><span>Áud.</span>
+      </button>
+      <button class="capture-action-btn" id="btn-photo" type="button">
+        <span class="capture-action-icon">📷</span><span>Foto</span>
+      </button>
+      <button class="capture-action-btn" id="btn-link" type="button">
+        <span class="capture-action-icon">🔗</span><span>Link</span>
+      </button>
+    </div>
+
+    <div id="link-field-wrap" class="link-field-wrap hidden">
+      <input type="url" id="input-link" class="text-input" placeholder="https://...">
+    </div>
+
+    <div id="audio-recorder" class="audio-recorder hidden">
+      <span class="recording-indicator"></span>
+      <span id="audio-timer">00:00</span>
+      <button id="btn-stop-audio" class="btn-secondary" type="button">Parar</button>
+    </div>
+
+    <button id="btn-capture" class="btn-primary" type="button">CAPTURAR</button>
+
+    <section class="recent-section">
+      <h2 class="section-title">── Últimas capturas ──</h2>
+      <div id="recent-list" class="recent-list">
+        <p class="empty-hint">Nada capturado ainda.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== TELA: BUSCA ===================== -->
+  <main id="screen-search" class="screen main-content hidden" data-screen="search">
+    <h1 class="screen-title">🔍 Pergunte à Segunda Mente</h1>
+
+    <form id="search-form" class="search-form">
+      <input type="search" id="search-input" class="text-input" placeholder="O que eu tenho sobre...">
+    </form>
+
+    <div class="filters-row">
+      <select id="filter-type" class="select-input">
+        <option value="">Todos</option>
+        <option value="text">📝 Texto</option>
+        <option value="link">🔗 Link</option>
+        <option value="audio">🎙 Áudio</option>
+        <option value="video">🎥 Vídeo</option>
+        <option value="pdf">📄 PDF</option>
+        <option value="image">📷 Imagem</option>
+      </select>
+      <select id="filter-category" class="select-input">
+        <option value="">Todas categorias</option>
+        <option value="Inteligência Artificial">Inteligência Artificial</option>
+        <option value="Programação">Programação</option>
+        <option value="Negócios">Negócios</option>
+        <option value="Trabalho">Trabalho</option>
+        <option value="Pessoal">Pessoal</option>
+        <option value="Outros">Outros</option>
+      </select>
+    </div>
+
+    <section id="ask-answer-section" class="ask-answer-section hidden">
+      <h2 class="section-title">── Resposta da IA ──</h2>
+      <p id="ask-answer" class="ask-answer"></p>
+    </section>
+
+    <section class="results-section">
+      <h2 class="section-title">── Resultados ──</h2>
+      <div id="search-results" class="content-list">
+        <p class="empty-hint">Faça uma pergunta para começar.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== TELA: BIBLIOTECA ===================== -->
+  <main id="screen-library" class="screen main-content hidden" data-screen="library">
+    <h1 class="screen-title">📚 Biblioteca</h1>
+    <p id="library-summary" class="library-summary">carregando...</p>
+
+    <div id="library-type-filters" class="type-filters-row"></div>
+
+    <div class="filters-row">
+      <select id="library-category" class="select-input">
+        <option value="">Todas categorias</option>
+        <option value="Inteligência Artificial">Inteligência Artificial</option>
+        <option value="Programação">Programação</option>
+        <option value="Negócios">Negócios</option>
+        <option value="Trabalho">Trabalho</option>
+        <option value="Pessoal">Pessoal</option>
+        <option value="Outros">Outros</option>
+      </select>
+      <select id="library-sort" class="select-input">
+        <option value="created_at:desc">Mais recentes</option>
+        <option value="created_at:asc">Mais antigos</option>
+        <option value="is_reviewed:asc">Não revisados primeiro</option>
+      </select>
+    </div>
+
+    <div id="library-results" class="content-list"></div>
+    <p id="library-loading" class="empty-hint hidden">Carregando mais...</p>
+  </main>
+
+  <!-- ===================== DETALHE (modal) ===================== -->
+  <div id="detail-overlay" class="detail-overlay hidden">
+    <div class="detail-modal">
+      <div class="detail-header">
+        <button id="btn-detail-back" class="icon-btn" type="button">← Voltar</button>
+        <button id="btn-detail-delete" class="icon-btn" type="button">🗑️</button>
+      </div>
+      <div id="detail-body" class="detail-body"></div>
+    </div>
+  </div>
+
+  <!-- ===================== NAV ===================== -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-nav="capture" type="button">
+      <span class="nav-icon">➕</span><span class="nav-label">Captura</span>
+    </button>
+    <button class="nav-btn" data-nav="search" type="button">
+      <span class="nav-icon">🔍</span><span class="nav-label">Busca</span>
+    </button>
+    <button class="nav-btn" data-nav="library" type="button">
+      <span class="nav-icon">📚</span><span class="nav-label">Biblioteca</span>
+    </button>
+  </nav>
+
+  <div id="toast-container" class="toast-container"></div>
+</div>
+
+<script src="/app.js"></script>
+<script src="/capture.js"></script>
+<script src="/search.js"></script>
+<script src="/library.js"></script>
+<script src="/detail.js"></script>
+</body>
+</html>
