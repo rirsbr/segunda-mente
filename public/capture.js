@@ -256,31 +256,13 @@ window.SM.Capture = (function () {
 
         $('btn-capture').addEventListener('click', handleCapture);
 
+        // Nota: a detecção de "colou uma URL isolada → captura automática"
+        // vive em app.js (initPasteUrlDetection), não aqui — para não ter
+        // dois listeners de 'paste' na mesma textarea disparando duas
+        // capturas do mesmo link.
+
         initDragDrop();
-        initPasteAutoCapture();
         loadRecent();
-    }
-
-    // ============ AUTO-SUBMIT AO COLAR UMA URL ============
-    function initPasteAutoCapture() {
-        const textarea = $('capture-textarea');
-        textarea.addEventListener('paste', (e) => {
-            const clipboard = e.clipboardData || window.clipboardData;
-            if (!clipboard) return;
-            const pasted = clipboard.getData('text');
-            if (!pasted) return;
-
-            const detected = detectContentType(pasted.trim());
-            if (detected.type === 'link') {
-                // É só uma URL: não precisa digitar nada nem clicar em CAPTURAR.
-                e.preventDefault();
-                textarea.value = '';
-                captureLink(detected.url);
-            }
-            // Caso contrário (texto com URL misturada a outras palavras, ou
-            // texto puro), deixa o paste normal acontecer — o usuário revisa
-            // e clica em CAPTURAR, que já faz a mesma detecção no submit.
-        });
     }
 
     return { init, loadRecent };

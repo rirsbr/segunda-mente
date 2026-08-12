@@ -138,13 +138,15 @@ window.SM = (function () {
         }
     }
 
-    // ============ COMPARTILHAMENTO (Web Share Target) ============
+    // ============ COMPARTILHAMENTO (Web Share Target — GET) ============
     /**
-     * Dois cenários chegam aqui via query string:
-     * 1. Retorno do fluxo /share.html (POST share_target) → só mostra o
-     *    resultado (?shared=success|partial|error|empty&title=...).
-     * 2. Compartilhamento/abertura direta via GET (?url=...&text=...&title=...)
-     *    → dispara a captura automaticamente, sem precisar tocar em nada.
+     * manifest.json declara share_target com method "GET" e action "/#share",
+     * mapeando title/text/url. O navegador então abre o app numa URL como
+     * "/?title=...&text=...&url=...#share" — os dados chegam como query
+     * string comum (window.location.search), então na inicialização do app
+     * é só ler esses parâmetros e capturar automaticamente:
+     *   - se vier "url"  → POST /api/capture/link
+     *   - senão, se vier "text" → POST /api/capture/text
      */
     function cleanUrlParams(params) {
         const query = params.toString();
@@ -152,74 +154,75 @@ window.SM = (function () {
         window.history.replaceState({}, '', newUrl);
     }
 
-    function handleShareReturn(params) {
-        const status = params.get('shared');
-        const title = params.get('title');
-        const messages = {
-            success: title ? `Capturado: ${title}` : 'Conteúdo compartilhado capturado!',
-            partial: 'Capturado parcialmente — alguns itens do compartilhamento falharam.',
-            error: 'Não foi possível capturar o conteúdo compartilhado.',
-            empty: 'Nenhum conteúdo compartilhado foi encontrado.',
-        };
-        const types = { success: 'success', partial: 'info', error: 'error', empty: 'info' };
-        showToast(messages[status] || 'Compartilhamento processado.', types[status] || 'info');
-
-        params.delete('shared');
-        params.delete('title');
-        cleanUrlParams(params);
-
-        if (window.SM.Capture && window.SM.Capture.loadRecent) window.SM.Capture.loadRecent();
-        if (window.SM.Library && window.SM.Library.refresh) window.SM.Library.refresh();
-    }
-
-    async function autoCaptureFromParams(params) {
+    async function handleShareTarget() {
+        const params = new URLSearchParams(window.location.search);
         const sharedUrl = (params.get('url') || '').trim();
         const sharedText = (params.get('text') || '').trim();
-        const sharedTitle = (params.get('title') || '').trim();
 
-        params.delete('url');
-        params.delete('text');
+        if (!sharedUrl && !sharedText) return;
+
         params.delete('title');
+        params.delete('text');
+        params.delete('url');
         cleanUrlParams(params);
 
-        showToast('Capturando conteúdo compartilhado...', 'info');
         try {
-            const urlRegex = /https?:\/\/[^\s]+/i;
-            const isDirectUrl = /^https?:\/\/[^\s]+$/i.test(sharedUrl);
-            const extracted = isDirectUrl ? sharedUrl : (sharedUrl.match(urlRegex) || sharedText.match(urlRegex) || [])[0];
-
-            let data;
-            if (extracted) {
-                data = await apiFetch('/capture/link', {
+            if (sharedUrl) {
+                await apiFetch('/capture/link', {
                     method: 'POST',
-                    body: JSON.stringify({ url: extracted }),
+                    body: JSON.stringify({ url: sharedUrl }),
                 });
             } else {
-                const combined = sharedTitle ? `${sharedTitle}\n\n${sharedText}`.trim() : sharedText;
-                if (!combined) return;
-                data = await apiFetch('/capture/text', {
+                await apiFetch('/capture/text', {
                     method: 'POST',
-                    body: JSON.stringify({ text: combined }),
+                    body: JSON.stringify({ text: sharedText }),
                 });
             }
-            showToast(`Capturado: ${data.title || 'conteúdo'}`, 'success');
+            showToast('Capturado!', 'success');
             if (window.SM.Capture && window.SM.Capture.loadRecent) window.SM.Capture.loadRecent();
         } catch (e) {
             showToast('Erro ao capturar conteúdo compartilhado: ' + e.message, 'error');
         }
     }
 
-    function handleIncomingShare() {
-        const params = new URLSearchParams(window.location.search);
-
-        if (params.has('shared')) {
-            handleShareReturn(params);
-            return;
+    // ============ DETECÇÃO DE URL NA CAPTURA DE TEXTO ============
+    /**
+     * Quando o usuário cola algo no campo de captura e o texto colado é,
+     * inteiro, uma URL (https://...), captura automaticamente como link —
+     * sem precisar clicar em CAPTURAR.
+     */
+    async function captureDetectedLink(url, textarea) {
+        showToast('Link detectado! Capturando...', 'info');
+        try {
+            await apiFetch('/capture/link', {
+                method: 'POST',
+                body: JSON.stringify({ url }),
+            });
+            showToast('Capturado!', 'success');
+            if (textarea) textarea.value = '';
+            if (window.SM.Capture && window.SM.Capture.loadRecent) window.SM.Capture.loadRecent();
+        } catch (e) {
+            showToast('Erro ao capturar link: ' + e.message, 'error');
         }
+    }
 
-        if (params.has('url') || params.has('text')) {
-            autoCaptureFromParams(params);
-        }
+    function initPasteUrlDetection() {
+        const textarea = document.getElementById('capture-textarea');
+        if (!textarea) return;
+
+        textarea.addEventListener('paste', (e) => {
+            const clipboard = e.clipboardData || window.clipboardData;
+            if (!clipboard) return;
+            const pasted = (clipboard.getData('text') || '').trim();
+            if (!pasted) return;
+
+            if (/^https?:\/\/[^\s]+$/i.test(pasted)) {
+                e.preventDefault();
+                captureDetectedLink(pasted, textarea);
+            }
+            // Texto misto (URL + palavras) ou texto puro: deixa o paste
+            // normal acontecer, o usuário revisa e clica em CAPTURAR.
+        });
     }
 
     function init() {
@@ -231,7 +234,8 @@ window.SM = (function () {
         if (window.SM.Library && window.SM.Library.init) window.SM.Library.init();
         if (window.SM.Detail && window.SM.Detail.init) window.SM.Detail.init();
 
-        handleIncomingShare();
+        initPasteUrlDetection();
+        handleShareTarget();
     }
 
     document.addEventListener('DOMContentLoaded', init);
