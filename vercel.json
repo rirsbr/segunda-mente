@@ -1,7 +1,6 @@
 {
     "rewrites": [
-        { "source": "/api/(.*)", "destination": "/api/index" },
-        { "source": "/share", "destination": "/share.html" }
+        { "source": "/api/(.*)", "destination": "/api/index?_path=$1" }
     ],
     "headers": [
         {
