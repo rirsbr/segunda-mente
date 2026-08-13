@@ -10,6 +10,28 @@ window.SM.Search = (function () {
 
     function $(id) { return document.getElementById(id); }
 
+    let lastQuery = '';
+
+    // ============ PESQUISAR NA WEB ============
+    function updateWebSearchButton(query) {
+        lastQuery = query || '';
+        const btn = $('btn-search-web');
+        const label = $('search-web-query');
+        if (!btn || !label) return;
+        if (lastQuery) {
+            label.textContent = lastQuery;
+            btn.classList.remove('hidden');
+        } else {
+            btn.classList.add('hidden');
+        }
+    }
+
+    function openWebSearch() {
+        if (!lastQuery) return;
+        const url = `https://www.google.com/search?q=${encodeURIComponent(lastQuery)}`;
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
     // ============ DESTAQUE DE TERMOS ============
     function escapeRegex(str) {
         return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -131,6 +153,7 @@ window.SM.Search = (function () {
 
         resultsEl.innerHTML = '<p class="empty-hint">Buscando...</p>';
         answerSection.classList.add('hidden');
+        updateWebSearchButton(query);
 
         // Resposta em linguagem natural via IA (concisa, com pontuação de relevância)
         try {
@@ -164,21 +187,31 @@ window.SM.Search = (function () {
 
         const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognitionImpl) {
+            // Browser sem suporte (ex: Firefox desktop) — some o botão.
             btn.classList.add('hidden');
             return;
         }
 
         const recognition = new SpeechRecognitionImpl();
         recognition.lang = 'pt-BR';
-        recognition.interimResults = false;
+        recognition.continuous = false;
+        recognition.interimResults = true;
         recognition.maxAlternatives = 1;
 
         let listening = false;
 
         recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
+            // Concatena todos os resultados (parciais + finais) recebidos
+            // até agora, para o texto ir aparecendo no campo em tempo real.
+            const transcript = Array.from(event.results)
+                .map((r) => r[0].transcript)
+                .join('');
             $('search-input').value = transcript;
-            runSearch();
+
+            const lastResult = event.results[event.results.length - 1];
+            if (lastResult && lastResult.isFinal) {
+                runSearch();
+            }
         };
         recognition.onerror = () => {
             showToast('Não foi possível reconhecer a fala. Tente novamente.', 'error');
@@ -215,6 +248,9 @@ window.SM.Search = (function () {
         $('filter-category').addEventListener('change', () => {
             if ($('search-input').value.trim()) runSearch();
         });
+
+        const webBtn = $('btn-search-web');
+        if (webBtn) webBtn.addEventListener('click', openWebSearch);
 
         initVoiceSearch();
     }

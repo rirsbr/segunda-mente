@@ -638,30 +638,65 @@ button, input, textarea, select {
 }
 
 /* ===================================
-   BUSCA POR VOZ
+   BUSCA POR VOZ — mic embutido dentro do campo, à direita
    =================================== */
 .search-input-row {
-    display: flex;
-    gap: 8px;
-    align-items: stretch;
+    position: relative;
 }
-.search-input-row .text-input { flex: 1; }
+.search-input-row .text-input {
+    padding-right: 52px;
+}
 .mic-btn {
-    flex-shrink: 0;
-    width: 48px;
-    background: var(--bg-input);
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius);
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
     font-size: 20px;
+    color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.2s;
 }
-.mic-btn:hover { border-color: var(--accent); }
+.mic-btn:hover { color: var(--accent-light); background: var(--accent-glow); }
 .mic-btn.recording {
+    color: #fff;
     background: var(--error);
-    border-color: var(--error);
     animation: pulse 1s infinite;
 }
+
+.btn-web-search {
+    display: block;
+    width: 100%;
+    background: var(--bg-card);
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+}
+.btn-web-search:hover {
+    border-color: var(--accent);
+    color: var(--accent-light);
+    background: var(--accent-glow);
+}
+.btn-web-search span {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+.btn-web-search:hover span { color: var(--accent-light); }
 
 /* ===================================
    RESULTADOS COM RELEVÂNCIA
