@@ -105,7 +105,7 @@ class ProjectOut(BaseModel):
 class ClassificationResult(BaseModel):
     title: str = Field(default="Sem título")
     summary: str = Field(default="")
-    category: str = Field(default="Outros")
+    category: str = Field(default="Outro")
     subcategory: str = Field(default="")
     tags: List[str] = Field(default_factory=list)
     intent: Optional[str] = Field(default="lembrar")

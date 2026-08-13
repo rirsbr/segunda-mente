@@ -7,7 +7,7 @@ from typing import List, Dict, Any
 
 from openai import AsyncOpenAI
 
-from api._lib.config import settings, CLASSIFICATION_PROMPT, ASK_SYSTEM_PROMPT
+from api._lib.config import settings, CLASSIFICATION_PROMPT, ASK_SYSTEM_PROMPT, CATEGORIES, BANNED_TAG_WORDS
 from api._lib.models import ClassificationResult
 
 logger = logging.getLogger(__name__)
@@ -34,17 +34,37 @@ def _strip_markdown_json(raw: str) -> str:
     return text.strip()
 
 
+def _filter_banned_tags(tags: List[str]) -> List[str]:
+    """
+    Rede de segurança contra o modelo "esquecer" a instrução do prompt:
+    remove qualquer tag que seja nome de plataforma/rede social em vez de
+    assunto (ex: "instagram", "tiktok") — essas nunca devem virar tag.
+    """
+    cleaned = []
+    for tag in tags or []:
+        normalized = (tag or "").strip().lower().replace(" ", "-")
+        if not normalized or normalized in BANNED_TAG_WORDS:
+            continue
+        cleaned.append(normalized)
+    return cleaned
+
+
 async def classify_content(content_text: str) -> ClassificationResult:
     """
     Classifica um conteúdo textual usando GPT-4o-mini.
     Retorna título, resumo, categoria, subcategoria, tags, intenção, projetos.
+    Classifica sempre pelo ASSUNTO do conteúdo, nunca pela plataforma de origem.
     """
     client = get_openai_client()
 
     # Limitar tamanho do conteúdo enviado ao LLM (evitar custo/limite de tokens)
     truncated = content_text[:12000] if content_text else ""
 
-    prompt = CLASSIFICATION_PROMPT.format(content=truncated)
+    prompt = CLASSIFICATION_PROMPT.format(
+        content=truncated,
+        categories=", ".join(CATEGORIES),
+        banned_tags=", ".join(sorted(BANNED_TAG_WORDS)),
+    )
 
     try:
         response = await client.chat.completions.create(
@@ -59,7 +79,11 @@ async def classify_content(content_text: str) -> ClassificationResult:
         raw = response.choices[0].message.content or "{}"
         raw = _strip_markdown_json(raw)
         data = json.loads(raw)
-        return ClassificationResult(**data)
+        result = ClassificationResult(**data)
+        result.tags = _filter_banned_tags(result.tags)
+        if result.category not in CATEGORIES:
+            result.category = "Outro"
+        return result
     except Exception as exc:
         logger.exception("Falha ao classificar conteúdo: %s", exc)
         # Fallback seguro — não deve travar o pipeline de captura
@@ -67,7 +91,7 @@ async def classify_content(content_text: str) -> ClassificationResult:
         return ClassificationResult(
             title=fallback_title,
             summary="",
-            category="Outros",
+            category="Outro",
             subcategory="",
             tags=[],
             intent="lembrar",

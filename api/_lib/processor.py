@@ -263,3 +263,53 @@ async def process_content(
 
         fallback = supabase.table("contents").select("*").eq("id", content_id).limit(1).execute()
         return fallback.data[0] if fallback.data else {**content, "status": "pending"}
+
+
+async def reclassify_content(content_id: str) -> dict:
+    """
+    Reclassifica um conteúdo JÁ PROCESSADO com o prompt de classificação
+    atual — usado quando o prompt muda e a base precisa ser "corrigida"
+    sem pagar o custo de re-extrair texto (Whisper/PDF/Vision/scraping) ou
+    regerar embeddings de novo. Atualiza apenas title, summary, category,
+    subcategory e tags, a partir do texto que JÁ está salvo no banco.
+
+    Nunca propaga exceção — mesmo padrão de `process_content`: se a
+    classificação falhar, o conteúdo permanece exatamente como estava.
+    """
+    supabase = get_supabase()
+
+    resp = supabase.table("contents").select("*").eq("id", content_id).limit(1).execute()
+    if not resp.data:
+        raise ValueError(f"Conteúdo {content_id} não encontrado")
+    content = resp.data[0]
+
+    text_for_classification = "\n".join(filter(None, [
+        content.get("title"),
+        content.get("original_text"),
+        content.get("transcription"),
+        content.get("extracted_text"),
+        content.get("source_url"),
+    ]))
+
+    try:
+        classification = await classify_content(text_for_classification)
+
+        update_fields = {
+            "title": classification.title or content.get("title"),
+            "summary": classification.summary,
+            "category": classification.category,
+            "subcategory": classification.subcategory,
+        }
+        supabase.table("contents").update(update_fields).eq("id", content_id).execute()
+
+        try:
+            await _save_tags(content_id, classification.tags)
+        except Exception as exc:
+            logger.warning("Falha ao salvar tags na reclassificação de %s: %s", content_id, exc)
+
+        final = supabase.table("contents").select("*").eq("id", content_id).limit(1).execute()
+        return final.data[0] if final.data else {**content, **update_fields}
+
+    except Exception as exc:
+        logger.exception("Falha ao reclassificar %s — mantendo classificação anterior: %s", content_id, exc)
+        return content

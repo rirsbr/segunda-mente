@@ -636,3 +636,194 @@ button, input, textarea, select {
 @keyframes share-spin {
     to { transform: rotate(360deg); }
 }
+
+/* ===================================
+   BUSCA POR VOZ
+   =================================== */
+.search-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+.search-input-row .text-input { flex: 1; }
+.mic-btn {
+    flex-shrink: 0;
+    width: 48px;
+    background: var(--bg-input);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.mic-btn:hover { border-color: var(--accent); }
+.mic-btn.recording {
+    background: var(--error);
+    border-color: var(--error);
+    animation: pulse 1s infinite;
+}
+
+/* ===================================
+   RESULTADOS COM RELEVÂNCIA
+   =================================== */
+.relevance-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.relevance-bar {
+    flex: 1;
+    height: 6px;
+    border-radius: 4px;
+    background: var(--bg-input);
+    overflow: hidden;
+}
+.relevance-fill {
+    height: 100%;
+    border-radius: 4px;
+}
+.relevance-fill.high { background: var(--success); }
+.relevance-fill.medium { background: var(--warning); }
+.relevance-fill.low { background: var(--error); }
+.relevance-badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+.relevance-badge.high { background: rgba(0, 206, 201, 0.18); color: var(--success); }
+.relevance-badge.medium { background: rgba(253, 203, 110, 0.18); color: var(--warning); }
+.relevance-badge.low { background: rgba(255, 107, 107, 0.18); color: var(--error); }
+
+mark.search-highlight {
+    background: var(--warning);
+    color: #000;
+    padding: 0 2px;
+    border-radius: 3px;
+}
+
+.result-group {
+    margin-bottom: 8px;
+}
+.result-group-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin: 18px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+}
+.result-group .content-list {
+    margin-bottom: 4px;
+}
+
+/* ===================================
+   CHIPS DE CATEGORIA / SUBCATEGORIA (Biblioteca)
+   =================================== */
+.category-chips-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    scrollbar-width: none;
+}
+.category-chips-row::-webkit-scrollbar { display: none; }
+.subcategory-chips-row {
+    margin-top: -6px;
+    padding-left: 8px;
+    border-left: 2px solid var(--accent-glow);
+}
+.category-chip {
+    flex-shrink: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+}
+.category-chip.active {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: var(--accent-light);
+}
+.category-chip .chip-count {
+    color: var(--text-muted);
+    font-size: 11px;
+    margin-left: 4px;
+}
+.category-chip.active .chip-count { color: var(--accent-light); }
+
+/* ===================================
+   NUVEM DE TAGS (Biblioteca)
+   =================================== */
+.tag-cloud-section { margin-bottom: 8px; }
+.tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+.tag-cloud-pill {
+    background: var(--accent-glow);
+    color: var(--accent-light);
+    border: 1px solid transparent;
+    border-radius: 20px;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    line-height: 1.4;
+}
+.tag-cloud-pill:hover { border-color: var(--accent); }
+.tag-cloud-pill.active {
+    background: var(--accent);
+    color: #fff;
+}
+.tag-cloud-pill.size-1 { font-size: 11px; }
+.tag-cloud-pill.size-2 { font-size: 13px; }
+.tag-cloud-pill.size-3 { font-size: 15px; font-weight: 600; }
+.tag-cloud-pill.size-4 { font-size: 18px; font-weight: 700; }
+
+/* ===================================
+   ADMIN / MANUTENÇÃO DA BASE (Biblioteca)
+   =================================== */
+.library-admin {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 20px;
+}
+.library-admin .section-title { margin-top: 0; }
+.admin-buttons-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.admin-buttons-row .btn-secondary { flex: 1; min-width: 140px; }
+.admin-progress-wrap { margin-top: 14px; }
+.admin-progress-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--bg-input);
+    overflow: hidden;
+}
+.admin-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+.admin-progress-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    text-align: center;
+}

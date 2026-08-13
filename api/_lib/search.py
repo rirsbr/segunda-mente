@@ -107,6 +107,9 @@ async def hybrid_search(query: str, filters: Optional[Dict[str, Any]] = None, li
     if not combined:
         return []
 
+    scores = dict(combined)
+    max_score = max(scores.values()) if scores else 0
+
     content_ids = [c[0] for c in combined[: max(limit * 3, limit)]]
     contents_resp = supabase.table("contents").select("*").in_("id", content_ids).execute()
     contents = contents_resp.data or []
@@ -117,6 +120,13 @@ async def hybrid_search(query: str, filters: Optional[Dict[str, Any]] = None, li
     filtered.sort(key=lambda c: id_order.get(c["id"], 999999))
 
     filtered = filtered[:limit]
+
+    # Score de relevância (0-100), relativo ao melhor resultado desta busca —
+    # usado no frontend para a barra colorida e o badge "% relevante".
+    for c in filtered:
+        raw = scores.get(c["id"], 0)
+        c["relevance_score"] = round((raw / max_score) * 100) if max_score else 0
+
     filtered = await _attach_tags(filtered)
     return filtered
 
@@ -137,6 +147,18 @@ async def list_contents(filters: Optional[Dict[str, Any]] = None, sort: str = "c
         q = q.eq("status", filters["status"])
     if filters.get("reviewed") is not None:
         q = q.eq("is_reviewed", filters["reviewed"])
+
+    tag_name = filters.get("tag")
+    if tag_name:
+        tag_resp = supabase.table("tags").select("id").eq("name", tag_name).limit(1).execute()
+        if not tag_resp.data:
+            return [], 0
+        tag_id = tag_resp.data[0]["id"]
+        ct_resp = supabase.table("content_tags").select("content_id").eq("tag_id", tag_id).execute()
+        content_ids = [row["content_id"] for row in (ct_resp.data or [])]
+        if not content_ids:
+            return [], 0
+        q = q.in_("id", content_ids)
 
     desc = order != "asc"
     q = q.order(sort, desc=desc)

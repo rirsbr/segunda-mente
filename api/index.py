@@ -62,6 +62,7 @@ _ROUTER_MODULES = [
     ("tags", "api._lib.routers.tags"),
     ("stats", "api._lib.routers.stats"),
     ("process", "api._lib.routers.process"),
+    ("reclassify", "api._lib.routers.reclassify"),
 ]
 
 for _name, _module_path in _ROUTER_MODULES:

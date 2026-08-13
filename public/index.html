@@ -71,7 +71,10 @@
     <h1 class="screen-title">🔍 Pergunte à Segunda Mente</h1>
 
     <form id="search-form" class="search-form">
-      <input type="search" id="search-input" class="text-input" placeholder="O que eu tenho sobre...">
+      <div class="search-input-row">
+        <input type="search" id="search-input" class="text-input" placeholder="O que eu tenho sobre...">
+        <button type="button" id="btn-voice-search" class="mic-btn" title="Buscar por voz" aria-label="Buscar por voz">🎤</button>
+      </div>
     </form>
 
     <div class="filters-row">
@@ -86,12 +89,18 @@
       </select>
       <select id="filter-category" class="select-input">
         <option value="">Todas categorias</option>
-        <option value="Inteligência Artificial">Inteligência Artificial</option>
+        <option value="IA - Geração de Vídeo">IA - Geração de Vídeo</option>
+        <option value="IA - Geração de Imagem">IA - Geração de Imagem</option>
+        <option value="IA - Geração de Texto">IA - Geração de Texto</option>
+        <option value="IA - Agentes e Automação">IA - Agentes e Automação</option>
+        <option value="IA - Ferramentas">IA - Ferramentas</option>
+        <option value="Marketing Digital">Marketing Digital</option>
+        <option value="Negócios e Empreendedorismo">Negócios e Empreendedorismo</option>
         <option value="Programação">Programação</option>
-        <option value="Negócios">Negócios</option>
-        <option value="Trabalho">Trabalho</option>
-        <option value="Pessoal">Pessoal</option>
-        <option value="Outros">Outros</option>
+        <option value="Trabalho - Petrobras">Trabalho - Petrobras</option>
+        <option value="Casa e Pessoal">Casa e Pessoal</option>
+        <option value="Entretenimento">Entretenimento</option>
+        <option value="Outro">Outro</option>
       </select>
     </div>
 
@@ -115,22 +124,33 @@
 
     <div id="library-type-filters" class="type-filters-row"></div>
 
+    <div id="library-category-chips" class="category-chips-row"></div>
+    <div id="library-subcategory-chips" class="category-chips-row subcategory-chips-row hidden"></div>
+
     <div class="filters-row">
-      <select id="library-category" class="select-input">
-        <option value="">Todas categorias</option>
-        <option value="Inteligência Artificial">Inteligência Artificial</option>
-        <option value="Programação">Programação</option>
-        <option value="Negócios">Negócios</option>
-        <option value="Trabalho">Trabalho</option>
-        <option value="Pessoal">Pessoal</option>
-        <option value="Outros">Outros</option>
-      </select>
       <select id="library-sort" class="select-input">
         <option value="created_at:desc">Mais recentes</option>
         <option value="created_at:asc">Mais antigos</option>
         <option value="is_reviewed:asc">Não revisados primeiro</option>
       </select>
     </div>
+
+    <section class="tag-cloud-section">
+      <h2 class="section-title">── Tags mais usadas ──</h2>
+      <div id="library-tag-cloud" class="tag-cloud"></div>
+    </section>
+
+    <section id="library-admin" class="library-admin">
+      <h2 class="section-title">── Manutenção da base ──</h2>
+      <div class="admin-buttons-row">
+        <button id="btn-process-pending" class="btn-secondary" type="button">▶️ Processar pendentes</button>
+        <button id="btn-reclassify-all" class="btn-secondary" type="button">🏷️ Reclassificar tudo</button>
+      </div>
+      <div id="admin-progress-wrap" class="admin-progress-wrap hidden">
+        <div class="admin-progress-bar"><div id="admin-progress-fill" class="admin-progress-fill"></div></div>
+        <p id="admin-progress-label" class="admin-progress-label"></p>
+      </div>
+    </section>
 
     <div id="library-results" class="content-list"></div>
     <p id="library-loading" class="empty-hint hidden">Carregando mais...</p>

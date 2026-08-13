@@ -35,6 +35,7 @@ async def _attach_projects(content: dict) -> dict:
 async def get_contents(
     type: Optional[str] = None,
     category: Optional[str] = None,
+    tag: Optional[str] = None,
     status: Optional[str] = None,
     reviewed: Optional[bool] = None,
     sort: str = "created_at",
@@ -42,7 +43,7 @@ async def get_contents(
     limit: int = Query(20, le=100),
     offset: int = 0,
 ):
-    filters = {"type": type, "category": category, "status": status, "reviewed": reviewed}
+    filters = {"type": type, "category": category, "tag": tag, "status": status, "reviewed": reviewed}
     contents, total = await list_contents(filters=filters, sort=sort, order=order, limit=limit, offset=offset)
     return {"results": contents, "total": total}
 

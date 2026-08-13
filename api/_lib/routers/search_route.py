@@ -50,8 +50,11 @@ async def ask(payload: AskRequest):
     for r in results[:8]:
         context_parts.append(
             f"[{(r.get('content_type') or '').upper()}] {r.get('title') or 'Sem título'}\n"
+            f"Relevância: {r.get('relevance_score', 0)}%\n"
             f"Categoria: {r.get('category') or 'N/A'}\n"
+            f"Subcategoria: {r.get('subcategory') or 'N/A'}\n"
             f"Resumo: {r.get('summary') or 'N/A'}\n"
+            f"Tags: {', '.join(r.get('tags') or []) or 'N/A'}\n"
             f"Data: {r.get('created_at') or 'N/A'}\n"
         )
     context = "\n---\n".join(context_parts)

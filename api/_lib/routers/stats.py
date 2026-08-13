@@ -37,7 +37,7 @@ async def get_stats():
         if name:
             tag_counter[name] += 1
 
-    top_tags = [{"name": name, "count": count} for name, count in tag_counter.most_common(10)]
+    top_tags = [{"name": name, "count": count} for name, count in tag_counter.most_common(20)]
 
     return {
         "total": total,
