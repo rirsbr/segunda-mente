@@ -44,7 +44,8 @@ async def ask(payload: AskRequest):
     if not question:
         raise HTTPException(status_code=400, detail="Pergunta vazia")
 
-    results = await hybrid_search(question, filters={}, limit=10)
+    filters = {"from": payload.from_, "to": payload.to}
+    results = await hybrid_search(question, filters=filters, limit=10)
 
     context_parts = []
     for r in results[:8]:

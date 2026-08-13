@@ -38,12 +38,22 @@ async def get_contents(
     tag: Optional[str] = None,
     status: Optional[str] = None,
     reviewed: Optional[bool] = None,
+    from_: Optional[str] = Query(None, alias="from"),
+    to: Optional[str] = None,
     sort: str = "created_at",
     order: str = "desc",
     limit: int = Query(20, le=100),
     offset: int = 0,
 ):
-    filters = {"type": type, "category": category, "tag": tag, "status": status, "reviewed": reviewed}
+    filters = {
+        "type": type,
+        "category": category,
+        "tag": tag,
+        "status": status,
+        "reviewed": reviewed,
+        "from": from_,
+        "to": to,
+    }
     contents, total = await list_contents(filters=filters, sort=sort, order=order, limit=limit, offset=offset)
     return {"results": contents, "total": total}
 

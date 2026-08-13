@@ -2,7 +2,7 @@
 Modelos Pydantic — requests e responses da API.
 """
 from typing import Optional, List, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 # ===================================
@@ -69,7 +69,11 @@ class ContentOut(BaseModel):
 # BUSCA / ASK
 # ===================================
 class AskRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     question: str
+    from_: Optional[str] = Field(None, alias="from")
+    to: Optional[str] = None
 
 
 class AskResponse(BaseModel):
@@ -81,6 +85,17 @@ class AskResponse(BaseModel):
 class SearchResponse(BaseModel):
     results: List[Any]
     total: int
+
+
+# ===================================
+# GERAÇÃO DE PROMPT EXECUTÁVEL
+# ===================================
+class GeneratePromptRequest(BaseModel):
+    content_id: str
+
+
+class GeneratePromptResponse(BaseModel):
+    prompt: str
 
 
 # ===================================

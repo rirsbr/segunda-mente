@@ -6,7 +6,7 @@
 window.SM = window.SM || {};
 
 window.SM.Search = (function () {
-    const { apiFetch, showToast, timeAgo, escapeHtml, typeIcon } = window.SM;
+    const { apiFetch, showToast, timeAgo, escapeHtml, typeIcon, computePeriodRange } = window.SM;
 
     function $(id) { return document.getElementById(id); }
 
@@ -145,6 +145,8 @@ window.SM.Search = (function () {
 
         const type = $('filter-type').value;
         const category = $('filter-category').value;
+        const period = $('filter-period').value;
+        const { from, to } = computePeriodRange(period);
         const terms = query.split(/\s+/).filter(Boolean);
 
         const answerSection = $('ask-answer-section');
@@ -157,9 +159,12 @@ window.SM.Search = (function () {
 
         // Resposta em linguagem natural via IA (concisa, com pontuação de relevância)
         try {
+            const askBody = { question: query };
+            if (from) askBody.from = from;
+            if (to) askBody.to = to;
             const askData = await apiFetch('/ask', {
                 method: 'POST',
-                body: JSON.stringify({ question: query }),
+                body: JSON.stringify(askBody),
             });
             answerEl.textContent = askData.answer;
             answerSection.classList.remove('hidden');
@@ -172,6 +177,8 @@ window.SM.Search = (function () {
             const params = new URLSearchParams({ q: query, limit: '20' });
             if (type) params.set('type', type);
             if (category) params.set('category', category);
+            if (from) params.set('from', from);
+            if (to) params.set('to', to);
 
             const searchData = await apiFetch(`/search?${params.toString()}`);
             renderResults(resultsEl, searchData.results, terms);
@@ -246,6 +253,9 @@ window.SM.Search = (function () {
             if ($('search-input').value.trim()) runSearch();
         });
         $('filter-category').addEventListener('change', () => {
+            if ($('search-input').value.trim()) runSearch();
+        });
+        $('filter-period').addEventListener('change', () => {
             if ($('search-input').value.trim()) runSearch();
         });
 

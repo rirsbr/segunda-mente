@@ -147,6 +147,10 @@ async def list_contents(filters: Optional[Dict[str, Any]] = None, sort: str = "c
         q = q.eq("status", filters["status"])
     if filters.get("reviewed") is not None:
         q = q.eq("is_reviewed", filters["reviewed"])
+    if filters.get("from"):
+        q = q.gte("created_at", filters["from"])
+    if filters.get("to"):
+        q = q.lte("created_at", filters["to"])
 
     tag_name = filters.get("tag")
     if tag_name:

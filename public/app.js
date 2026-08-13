@@ -106,6 +106,26 @@ window.SM = (function () {
         return TYPE_LABELS[type] || type || '';
     }
 
+    // ============ FILTRO DE PERÍODO ============
+    // Usado pelos dropdowns de período da Busca e da Biblioteca — calcula
+    // `from`/`to` (ISO) no frontend a partir de uma chave de período.
+    const PERIOD_DAYS = {
+        '7d': 7,
+        '1m': 30,
+        '3m': 90,
+        '6m': 180,
+        '1y': 365,
+    };
+
+    function computePeriodRange(value) {
+        const days = PERIOD_DAYS[value];
+        if (!days) return { from: '', to: '' };
+        const to = new Date();
+        const from = new Date();
+        from.setDate(from.getDate() - days);
+        return { from: from.toISOString(), to: to.toISOString() };
+    }
+
     // ============ ROTEAMENTO ENTRE TELAS ============
     function showScreen(name) {
         document.querySelectorAll('.screen').forEach((el) => {
@@ -249,5 +269,6 @@ window.SM = (function () {
         typeIcon,
         typeLabel,
         showScreen,
+        computePeriodRange,
     };
 })();

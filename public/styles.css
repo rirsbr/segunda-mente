@@ -561,6 +561,21 @@ button, input, textarea, select {
     margin-top: 6px;
     padding: 0;
 }
+.generate-prompt-section { margin-top: 12px; }
+.generate-prompt-box {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 320px;
+    overflow-y: auto;
+    margin-bottom: 4px;
+}
 .detail-source-link {
     color: var(--accent-light);
     font-size: 13px;

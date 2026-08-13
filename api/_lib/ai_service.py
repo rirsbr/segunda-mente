@@ -7,7 +7,14 @@ from typing import List, Dict, Any
 
 from openai import AsyncOpenAI
 
-from api._lib.config import settings, CLASSIFICATION_PROMPT, ASK_SYSTEM_PROMPT, CATEGORIES, BANNED_TAG_WORDS
+from api._lib.config import (
+    settings,
+    CLASSIFICATION_PROMPT,
+    ASK_SYSTEM_PROMPT,
+    GENERATE_PROMPT_SYSTEM,
+    CATEGORIES,
+    BANNED_TAG_WORDS,
+)
 from api._lib.models import ClassificationResult
 
 logger = logging.getLogger(__name__)
@@ -126,3 +133,12 @@ Responda a pergunta usando os conteúdos acima.""",
         },
     ]
     return await openai_chat(settings.MODEL_CHAT, messages)
+
+
+async def generate_execution_prompt(context: str) -> str:
+    """Gera um prompt pronto para colar em outra IA e executar o conteúdo salvo."""
+    messages = [
+        {"role": "system", "content": GENERATE_PROMPT_SYSTEM},
+        {"role": "user", "content": context},
+    ]
+    return await openai_chat(settings.MODEL_CHAT, messages, temperature=0.4)

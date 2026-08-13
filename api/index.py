@@ -63,6 +63,7 @@ _ROUTER_MODULES = [
     ("stats", "api._lib.routers.stats"),
     ("process", "api._lib.routers.process"),
     ("reclassify", "api._lib.routers.reclassify"),
+    ("generate_prompt", "api._lib.routers.generate_prompt"),
 ]
 
 for _name, _module_path in _ROUTER_MODULES:

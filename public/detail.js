@@ -57,6 +57,14 @@ window.SM.Detail = (function () {
                 </div>`;
         }
 
+        html += `
+            <button class="btn-primary btn-block" id="btn-generate-prompt">🤖 Gerar Prompt para Executar</button>
+            <div id="generate-prompt-section" class="generate-prompt-section hidden">
+                <div class="detail-block-title">── Prompt Gerado ──</div>
+                <div class="generate-prompt-box" id="generate-prompt-box"></div>
+                <button class="btn-secondary btn-block" id="btn-copy-prompt">📋 Copiar Prompt</button>
+            </div>`;
+
         if (bodyText && c.content_type === 'text') {
             html += `
                 <div class="detail-block">
@@ -119,6 +127,8 @@ window.SM.Detail = (function () {
 
         $('btn-mark-reviewed').addEventListener('click', markReviewed);
         $('btn-reprocess').addEventListener('click', reprocess);
+        $('btn-generate-prompt').addEventListener('click', generatePrompt);
+        $('btn-copy-prompt').addEventListener('click', copyPrompt);
     }
 
     async function open(id) {
@@ -163,6 +173,44 @@ window.SM.Detail = (function () {
             if (window.SM.Library) window.SM.Library.refresh();
         } catch (e) {
             showToast('Erro ao reprocessar: ' + e.message, 'error');
+        }
+    }
+
+    async function generatePrompt() {
+        if (!currentId) return;
+        const btn = $('btn-generate-prompt');
+        const section = $('generate-prompt-section');
+        const box = $('generate-prompt-box');
+
+        btn.disabled = true;
+        btn.textContent = 'Gerando prompt...';
+        section.classList.remove('hidden');
+        box.textContent = 'Gerando prompt...';
+
+        try {
+            const data = await apiFetch('/generate-prompt', {
+                method: 'POST',
+                body: JSON.stringify({ content_id: currentId }),
+            });
+            box.textContent = data.prompt;
+        } catch (e) {
+            section.classList.add('hidden');
+            showToast('Erro ao gerar prompt: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🤖 Gerar Prompt para Executar';
+        }
+    }
+
+    async function copyPrompt() {
+        const box = $('generate-prompt-box');
+        const text = box ? box.textContent : '';
+        if (!text) return;
+        try {
+            await navigator.clipboard.writeText(text);
+            showToast('Prompt copiado!', 'success');
+        } catch (e) {
+            showToast('Não foi possível copiar. Selecione e copie manualmente.', 'error');
         }
     }
 

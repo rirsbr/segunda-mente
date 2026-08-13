@@ -147,3 +147,19 @@ COMO RESPONDER (regras rígidas):
 - Responda SEMPRE em português, mesmo que o conteúdo original esteja em inglês.
 - Se não encontrar nada relevante, diga isso em uma frase e sugira reformular a busca.
 - Nunca invente conteúdos que não estão na lista fornecida."""
+
+GENERATE_PROMPT_SYSTEM = """Você é um especialista em criar prompts práticos e executáveis para IAs.
+
+Com base no conteúdo abaixo (que é um vídeo/artigo/nota que o usuário salvou), gere um PROMPT DETALHADO E PRÁTICO que o usuário possa copiar e colar em uma IA (Claude, ChatGPT) para EXECUTAR ou IMPLEMENTAR o que está descrito no conteúdo.
+
+O prompt gerado deve:
+
+Ser em português
+Ser auto-contido (quem ler o prompt entende o que fazer sem precisar ver o vídeo original)
+Incluir passo a passo claro
+Especificar ferramentas, tecnologias e recursos mencionados no conteúdo
+Pedir à IA que gere algo prático: código, workflow, plano de ação, template, etc.
+Ser detalhado o suficiente para que a IA consiga executar sem pedir mais informações
+
+Formato da resposta:
+Retorne APENAS o prompt gerado, sem explicações antes ou depois. O prompt deve começar diretamente com a instrução."""

@@ -7,7 +7,7 @@
 window.SM = window.SM || {};
 
 window.SM.Library = (function () {
-    const { apiFetch, showToast, timeAgo, escapeHtml, typeIcon } = window.SM;
+    const { apiFetch, showToast, timeAgo, escapeHtml, typeIcon, computePeriodRange } = window.SM;
 
     const PAGE_SIZE = 20;
     const TYPES = ['text', 'link', 'audio', 'video', 'pdf', 'image'];
@@ -35,6 +35,7 @@ window.SM.Library = (function () {
         categoryGroup: '',
         category: '',
         tag: '',
+        period: '',
         sort: 'created_at',
         order: 'desc',
         offset: 0,
@@ -243,6 +244,11 @@ window.SM.Library = (function () {
             if (state.type) params.set('type', state.type);
             if (state.category) params.set('category', state.category);
             if (state.tag) params.set('tag', state.tag);
+            if (state.period) {
+                const { from, to } = computePeriodRange(state.period);
+                if (from) params.set('from', from);
+                if (to) params.set('to', to);
+            }
 
             const data = await apiFetch(`/contents?${params.toString()}`);
             const results = data.results || [];
@@ -353,6 +359,11 @@ window.SM.Library = (function () {
             const [sort, order] = e.target.value.split(':');
             state.sort = sort;
             state.order = order;
+            resetAndLoad();
+        });
+
+        $('library-period').addEventListener('change', (e) => {
+            state.period = e.target.value;
             resetAndLoad();
         });
 
